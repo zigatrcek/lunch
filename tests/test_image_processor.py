@@ -30,60 +30,60 @@ class TestImageProcessor:
         img = image_processing.open_image(menu_image_path)
         assert img is not None, "Failed to open image"
         assert isinstance(
-            img, PILImage.Image), "Image is not a PIL Image object"
+            img, PILImage.Image
+        ), "Image is not a PIL Image object"
 
         with pytest.raises(IOError):
             # Test with an invalid path
             image_processing.open_image("invalid_path.png")
 
-    def test_convert_to_grayscale(self):
-        """Test function to convert image to grayscale."""
-        img = PILImage.new("RGB", (100, 100),
-                           color="blue")  # Create a dummy image
-        grayscale_img = image_processing.convert_to_grayscale(img)
-        assert grayscale_img is not None, "Failed to convert image to grayscale"
-        assert isinstance(
-            grayscale_img, PILImage.Image), "Result is not a PIL Image object"
-        assert grayscale_img.mode == "L", "Grayscale image mode is not 'L'"
-        assert grayscale_img.size == img.size, "Grayscale image dimensions do not match original"
-        # Test with an invalid input (not a PIL Image)
-        with pytest.raises(TypeError):
-            image_processing.convert_to_grayscale("not_an_image")
-
-    def test_apply_binarization(self):
-        """Test function to apply binarization using Otsu's method."""
-        # TODO: Test ImageProcessor.apply_binarization() function
-        # Should accept grayscale PIL Image object as input
-        # Should use Otsu's thresholding method
-        # Should return binary image (black and white only)
-        # Should handle edge cases (very dark/bright images)
-        # Create a dummy grayscale image
-        img = PILImage.new("L", (100, 100), color=128)
-        binary_img = image_processing.apply_binarization(img)
-        assert binary_img is not None, "Failed to apply binarization"
-        assert isinstance(
-            binary_img, PILImage.Image), "Result is not a PIL Image object"
-        assert binary_img.mode == "L", "Binarized image mode is not 'L' (grayscale)"
-        assert binary_img.size == img.size, "Binarized image dimensions do not match original"
-        # Test with an invalid input (not a PIL Image)
-        with pytest.raises(TypeError):
-            image_processing.apply_binarization("not_an_image")
-
     def test_complete_preprocessing_pipeline(self, menu_image_path):
-        """Test complete image preprocessing workflow."""
-        # TODO: Test full pipeline from raw image to OCR-ready binary image
-        # 1. Open image from path
-        # 2. Convert to grayscale
-        # 3. Apply Otsu's binarization
-        # 4. Save result for debugging
-        # Should work with actual menu image if available
+        """
+        Test complete image preprocessing workflow
+        (black pixel extraction pipeline).
+        """
         preprocessed_img = image_processing.preprocess_image(menu_image_path)
         assert preprocessed_img is not None, "Preprocessing failed"
-        assert isinstance(preprocessed_img,
-                          PILImage.Image), "Result is not a PIL Image object"
-        assert preprocessed_img.mode == "L", "Preprocessed image mode is not 'L' (grayscale)"
-        assert preprocessed_img.size == PILImage.open(
-            menu_image_path).size, "Preprocessed image dimensions do not match original"
-        # Test with an invalid path
+        assert isinstance(
+            preprocessed_img, PILImage.Image
+        ), "Result is not a PIL Image object"
+        assert preprocessed_img.mode == "L", (
+            "Preprocessed image mode is not 'L' (grayscale)"
+        )
+        assert preprocessed_img.size == PILImage.open(menu_image_path).size, (
+            "Preprocessed image dimensions do not match original"
+        )
+
         with pytest.raises(IOError):
+            # Test with an invalid path
             image_processing.preprocess_image("invalid_path.png")
+
+    def test_extract_black_pixels(self):
+        """Test extracting black or almost black pixels from an image."""
+        img = PILImage.new("RGB", (10, 10), color=(0, 0, 0))
+        # Draw a white square in the center
+        for x in range(3, 7):
+            for y in range(3, 7):
+                img.putpixel((x, y), (255, 255, 255))
+        # Should extract only the black border
+        binary_img = image_processing.extract_black_pixels(img, threshold=40)
+        assert binary_img is not None, "Failed to extract black pixels"
+        assert isinstance(
+            binary_img, PILImage.Image
+        ), "Result is not a PIL Image object"
+        assert binary_img.mode == "L", "Output image mode is not 'L'"
+        # Center should be white (255), border should be black (0)
+        for x in range(10):
+            for y in range(10):
+                px = binary_img.getpixel((x, y))
+                if 3 <= x < 7 and 3 <= y < 7:
+                    assert px == 255, (
+                        f"Center pixel at ({x},{y}) should be white"
+                    )
+                else:
+                    assert px == 0, (
+                        f"Border pixel at ({x},{y}) should be black"
+                    )
+        # Test with invalid input
+        with pytest.raises(TypeError):
+            image_processing.extract_black_pixels("not_an_image")

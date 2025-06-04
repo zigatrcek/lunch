@@ -53,40 +53,39 @@ def convert_to_grayscale(image: Image.Image) -> Image.Image:
     return gray_img
 
 
-def apply_binarization(image: Image.Image) -> Image.Image:
+def extract_black_pixels(image: Image.Image, threshold: int = 40) -> Image.Image:
     """
-    Apply binarization to an image using Otsu's method.
+    Extract pixels that are black or almost black from an image.
+    All pixels where all RGB channels are below the threshold are set to black (0),
+    others to white (255).
 
     Args:
-        image (Image): Grayscale PIL Image object.
+        image (Image): PIL Image object (RGB or grayscale).
+        threshold (int): Maximum value for a channel to be considered
+            "almost black" (default: 40).
 
     Returns:
         Image: Binary (black and white) PIL Image object.
     """
-    logger.debug("Applying binarization using Otsu's method")
+    logger.debug(f"Extracting black pixels with threshold {threshold}")
     if not isinstance(image, Image.Image):
         logger.error("Input is not a PIL Image object")
         raise TypeError("Input must be a PIL Image object")
 
-    # Ensure the image is in grayscale mode
-    if image.mode != "L":
-        logger.error(
-            f"Image must be in grayscale mode, but got mode: {image.mode}"
-        )
-        raise ValueError("Image must be in grayscale mode for binarization")
+    # Convert to RGB if not already
+    if image.mode != "RGB":
+        img_rgb = image.convert("RGB")
+    else:
+        img_rgb = image
 
-    # Convert to numpy array for processing
-    img_array = np.array(image)
-    logger.debug(f"Image array shape: {img_array.shape}")
-
-    # Apply Otsu's thresholding
-    thresh = threshold_otsu(img_array)
-    logger.debug(f"Otsu threshold value: {thresh}")
-    binary_image = img_array > thresh
-
-    binary_image = (binary_image * 255).astype(np.uint8)  # Convert to uint8
-    result = Image.fromarray(binary_image, mode="L")
-    logger.info(f"Successfully applied binarization (Threshold: {thresh:.2f})")
+    arr = np.array(img_rgb)
+    # Create mask: all channels below threshold
+    mask = np.all(arr < threshold, axis=-1)
+    # Create binary image: black where mask is True, white elsewhere
+    binary_arr = np.where(mask, 0, 255).astype(np.uint8)
+    # Convert to single channel (L mode)
+    result = Image.fromarray(binary_arr, mode="L")
+    logger.info(f"Extracted black pixels (threshold={threshold})")
     return result
 
 
@@ -107,13 +106,7 @@ def preprocess_image(image_path: str) -> Image.Image:
         logger.debug("Step 1: Opening image")
         img = open_image(image_path)
 
-        # Step 2: Convert to grayscale
-        logger.debug("Step 2: Converting to grayscale")
-        gray_img = convert_to_grayscale(img)
-
-        # Step 3: Apply Otsu's binarization
-        logger.debug("Step 3: Applying binarization")
-        binary_img = apply_binarization(gray_img)
+        binary_img = extract_black_pixels(img, threshold=40)
 
         logger.info(
             f"Successfully completed preprocessing pipeline for: {image_path}"
@@ -123,3 +116,18 @@ def preprocess_image(image_path: str) -> Image.Image:
     except Exception as e:
         logger.error(f"Failed to preprocess image {image_path}: {e}")
         raise
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    try:
+        img_path = "tests/test_images/test_menu.jpg"
+        logger.info(f"Running preprocessing on image: {img_path}")
+        preprocessed_img = preprocess_image(img_path)
+        plt.imshow(preprocessed_img, cmap='gray')
+        plt.axis('off')
+        plt.show()
+        logger.info("Preprocessing completed successfully")
+    except Exception as e:
+        logger.error(f"Error in preprocessing: {e}")
