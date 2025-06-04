@@ -90,4 +90,3 @@ def extract_text_from_image(
     except Exception as e:
         logger.error(f"Unexpected error during OCR processing: {e}")
         raise Exception(f"OCR processing failed with unexpected error: {e}")
-
