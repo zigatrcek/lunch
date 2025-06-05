@@ -30,7 +30,8 @@ def main():
     parser.add_argument(
         "--image-path",
         type=str,
-        default=str(Path(__file__).parent.parent / "tests" / "test_images" / "test_menu.jpg"),
+        default=str(Path(__file__).parent.parent / "tests" /
+                    "test_files" / "test_menu.jpg"),
         help="Path to the menu image file"
     )
     parser.add_argument(

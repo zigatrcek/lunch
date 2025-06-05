@@ -21,7 +21,7 @@ class TestImageProcessor:
     @pytest.fixture
     def menu_image_path(self):
         """Path where test menu image should be uploaded."""
-        test_image_dir = Path(__file__).parent / "test_images"
+        test_image_dir = Path(__file__).parent / "test_files"
         test_image_dir.mkdir(exist_ok=True)
         return test_image_dir / "test_menu.jpg"
 

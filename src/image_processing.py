@@ -122,7 +122,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     try:
-        img_path = "tests/test_images/test_menu.jpg"
+        img_path = "tests/test_files/test_menu.jpg"
         logger.info(f"Running preprocessing on image: {img_path}")
         preprocessed_img = preprocess_image(img_path)
         plt.imshow(preprocessed_img, cmap='gray')
