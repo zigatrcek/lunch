@@ -5,13 +5,11 @@ This module uses Google's Gemini Flash API to convert raw OCR text from
 restaurant menu images into structured JSON data.
 """
 
-import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import google.generativeai as genai
 import instructor
-import jsonschema
 from pydantic import BaseModel, Field
 
 from src.config import config
@@ -29,6 +27,7 @@ class MenuItem(BaseModel):
     price: str = Field(..., description="Price of the menu item in EUR")
     type: str = Field(...,
                       description="Type of the menu item (e.g., 'meat', 'fish', 'soup')")
+
 
 class Menu(BaseModel):
     """
@@ -132,10 +131,11 @@ def parse_menu_with_gemini(
     if not isinstance(ocr_text, str):
         raise ValueError("OCR text must be a string")
     if not isinstance(client, instructor.client.Instructor):
-        raise ValueError(f"Client must be an instance of instructor.client.Instructor, but got {type(client)}")
+        raise ValueError(
+            f"Client must be an instance of instructor.client.Instructor, but got {type(client)}")
     if not config.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not configured")
-    
+
     prompt = create_menu_extraction_prompt(ocr_text)
     try:
         menu_response: Menu = client.chat.completions.create(
@@ -148,13 +148,13 @@ def parse_menu_with_gemini(
             ],
         )
         logger.info("Successfully called Gemini API for menu extraction")
-        
+
         if not menu_response or not isinstance(menu_response, Menu):
             logger.error("Invalid response format from Gemini API: ",
                          menu_response)
             raise ValueError("Invalid response from Gemini API")
         return menu_response
-        
+
     except Exception as e:
         logger.error(f"Failed to call Gemini API: {e}")
         raise Exception(f"Failed to call Gemini API: {e}")
@@ -183,7 +183,7 @@ def extract_menu_from_ocr(
         return []
     if not isinstance(ocr_text, str):
         raise ValueError("OCR text must be a string")
-    
+
     try:
         client = create_gemini_client()
         menu_items_list = parse_menu_with_gemini(ocr_text, client)
